@@ -8,7 +8,7 @@ export default function Search() {
   />
   <button
     type="submit"
-    className="flex items-center justify-center px-1 bg-white rounded-tr-2xl rounded-br-2xl ml-1 bg-blue-900"
+    className="flex items-center justify-center px-1 bg-blue rounded-tr-2xl rounded-br-2xl ml- bg-blue-900"
   >
     <span>
       <svg
