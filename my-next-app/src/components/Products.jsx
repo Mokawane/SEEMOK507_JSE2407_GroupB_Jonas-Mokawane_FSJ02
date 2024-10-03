@@ -27,22 +27,25 @@ export default function Products() {
    * @function fetchProducts
    */
   useEffect(() => {
-    async function fetchProducts() {
+    const fetchProducts = async () => {
       setLoading(true);
       setError(null);
       try {
         const sortQuery = sortBy === 'id' ? 'id' : 'price';
         const orderQuery = order === 'asc' || sortBy === 'id' ? 'asc' : order;
-        let res = await fetch(`https://next-ecommerce-api.vercel.app/products?limit=${limit}&skip=${skip}&sortBy=${sortQuery}&order=${orderQuery}`);
+        const res = await fetch(
+          `https://next-ecommerce-api.vercel.app/products?limit=${limit}&skip=${skip}&sortBy=${sortQuery}&order=${orderQuery}`
+        );
         if (!res.ok) throw new Error('Network response was not ok');
-        let data = await res.json();
+        const data = await res.json();
         setProducts(data);
       } catch (error) {
         setError(error.message);
       } finally {
         setLoading(false);
       }
-    }
+    };
+
     fetchProducts();
   }, [skip, sortBy, order]);
 
@@ -108,20 +111,25 @@ export default function Products() {
 
   return (
     <div>
-      <Sort onSortChange={(name, value) => {
-        if (name === 'sortBy') {
-          if (value === 'id') {
-            setSortBy('id');
-            setOrder('asc');
-          } else {
-            setSortBy('price');
-            setOrder(value.includes('asc') ? 'asc' : 'desc');
+      <Sort
+        onSortChange={(name, value) => {
+          if (name === 'sortBy') {
+            if (value === 'id') {
+              setSortBy('id');
+              setOrder('asc');
+            } else {
+              setSortBy('price');
+              setOrder(value.includes('asc') ? 'asc' : 'desc');
+            }
           }
-        }
-      }} />
+        }}
+      />
       <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
         {products.map((product, index) => (
-          <li key={product.id} className="bg-white border p-2 shadow-lg rounded-lg transition-transform transform hover:scale-105">
+          <li
+            key={product.id}
+            className="bg-white border p-2 shadow-lg rounded-lg transition-transform transform hover:scale-105"
+          >
             <Link href={`/product/${product.id}`}>
               <div className="relative">
                 {product.images.length > 1 && (
@@ -164,17 +172,10 @@ export default function Products() {
         ))}
       </ul>
       <div className="flex justify-between mt-4 px-4">
-        <button
-          className="bg-gray-800 text-white p-2 rounded"
-          onClick={handlePrevPage}
-          disabled={skip === 0}
-        >
+        <button className="bg-gray-800 text-white p-2 rounded" onClick={handlePrevPage} disabled={skip === 0}>
           Previous
         </button>
-        <button
-          className="bg-gray-800 text-white p-2 rounded"
-          onClick={handleNextPage}
-        >
+        <button className="bg-gray-800 text-white p-2 rounded" onClick={handleNextPage}>
           Next
         </button>
       </div>
