@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Search from "./Search";
 
 export default function Header() {
   const [isNavbarVisible, setIsNavbarVisible] = useState(false);
@@ -18,7 +17,6 @@ export default function Header() {
               Store
             </span>
           </button>
-          <Search />
           <button
             onClick={toggleNavbar}
             data-collapse-toggle="navbar-default"
