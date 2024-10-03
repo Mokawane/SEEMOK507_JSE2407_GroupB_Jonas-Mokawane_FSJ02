@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Sort from './Sort';
+import Filter from './Filter';
 
 /**
  * Component that fetches and displays a paginated list of products. Allows users to cycle through
@@ -17,6 +18,7 @@ export default function Products() {
   const [error, setError] = useState(null);
   const [sortBy, setSortBy] = useState('id');
   const [order, setOrder] = useState('asc');
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const limit = 20;
 
   /**
@@ -27,27 +29,27 @@ export default function Products() {
    * @function fetchProducts
    */
   useEffect(() => {
-    const fetchProducts = async () => {
+    async function fetchProducts() {
       setLoading(true);
       setError(null);
       try {
         const sortQuery = sortBy === 'id' ? 'id' : 'price';
         const orderQuery = order === 'asc' || sortBy === 'id' ? 'asc' : order;
-        const res = await fetch(
-          `https://next-ecommerce-api.vercel.app/products?limit=${limit}&skip=${skip}&sortBy=${sortQuery}&order=${orderQuery}`
-        );
+        
+        const categoryQuery = selectedCategory ? `&category=${selectedCategory}` : '';
+
+        let res = await fetch(`https://next-ecommerce-api.vercel.app/products?limit=${limit}&skip=${skip}&sortBy=${sortQuery}&order=${orderQuery}${categoryQuery}`);
         if (!res.ok) throw new Error('Network response was not ok');
-        const data = await res.json();
+        let data = await res.json();
         setProducts(data);
       } catch (error) {
         setError(error.message);
       } finally {
         setLoading(false);
       }
-    };
-
+    }
     fetchProducts();
-  }, [skip, sortBy, order]);
+  }, [skip, sortBy, order, selectedCategory]);
 
   /**
    * Handles cycling to the previous image in the product's image gallery.
@@ -111,25 +113,21 @@ export default function Products() {
 
   return (
     <div>
-      <Sort
-        onSortChange={(name, value) => {
-          if (name === 'sortBy') {
-            if (value === 'id') {
-              setSortBy('id');
-              setOrder('asc');
-            } else {
-              setSortBy('price');
-              setOrder(value.includes('asc') ? 'asc' : 'desc');
-            }
+      <Filter onCategoryChange={setSelectedCategory} />
+      <Sort onSortChange={(name, value) => {
+        if (name === 'sortBy') {
+          if (value === 'id') {
+            setSortBy('id');
+            setOrder('asc');
+          } else {
+            setSortBy('price');
+            setOrder(value.includes('asc') ? 'asc' : 'desc');
           }
-        }}
-      />
+        }
+      }} />
       <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
         {products.map((product, index) => (
-          <li
-            key={product.id}
-            className="bg-white border p-2 shadow-lg rounded-lg transition-transform transform hover:scale-105"
-          >
+          <li key={product.id} className="bg-white border p-2 shadow-lg rounded-lg transition-transform transform hover:scale-105">
             <Link href={`/product/${product.id}`}>
               <div className="relative">
                 {product.images.length > 1 && (
@@ -172,10 +170,17 @@ export default function Products() {
         ))}
       </ul>
       <div className="flex justify-between mt-4 px-4">
-        <button className="bg-gray-800 text-white p-2 rounded" onClick={handlePrevPage} disabled={skip === 0}>
+        <button
+          className="bg-gray-800 text-white p-2 rounded"
+          onClick={handlePrevPage}
+          disabled={skip === 0}
+        >
           Previous
         </button>
-        <button className="bg-gray-800 text-white p-2 rounded" onClick={handleNextPage}>
+        <button
+          className="bg-gray-800 text-white p-2 rounded"
+          onClick={handleNextPage}
+        >
           Next
         </button>
       </div>
