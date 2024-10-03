@@ -17,7 +17,7 @@ export default function SearchResults() {
       setLoading(true);
       try {
         const res = await fetch(
-          `https://next-ecommerce-api.vercel.app/products?search=${query}` // Replace with your actual search API
+          `https://next-ecommerce-api.vercel.app/products?search=${query}`
         );
         if (!res.ok) throw new Error("Error fetching search results.");
         const data = await res.json();

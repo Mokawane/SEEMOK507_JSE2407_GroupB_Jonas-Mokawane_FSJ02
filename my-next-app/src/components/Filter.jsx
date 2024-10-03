@@ -18,7 +18,7 @@ export default function Filter({ onCategoryChange }) {
       try {
         const res = await fetch('https://next-ecommerce-api.vercel.app/categories');
         const data = await res.json();
-        groupCategories(data); // Group categories after fetching
+        groupCategories(data);
       } catch (error) {
         console.error('Error fetching categories:', error);
       }

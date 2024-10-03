@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Sort from './Sort';
 import Filter from './Filter';
-import { useRouter } from 'next/navigation';
 
 /**
  * Component that fetches and displays a paginated list of products. Allows users to cycle through
@@ -15,17 +15,23 @@ import { useRouter } from 'next/navigation';
 export default function Products() {
   const router = useRouter();
   const { query } = router;
+
+  const initialPage = query?.page ? Number(query.page) : 1;
+  const initialSortBy = query?.sortBy || 'id';
+  const initialOrder = query?.order || 'asc';
+  const initialCategory = query?.category || null;
+
   const [products, setProducts] = useState([]);
-  const [skip, setSkip] = useState(Number(query?.skip) || 0);
+  const [page, setPage] = useState(initialPage);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [sortBy, setSortBy] = useState(query?.sortBy || 'id');
-  const [order, setOrder] = useState(query?.order || 'asc');
-  const [selectedCategory, setSelectedCategory] = useState(query?.category || null);
+  const [sortBy, setSortBy] = useState(initialSortBy);
+  const [order, setOrder] = useState(initialOrder);
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const limit = 20;
 
   /**
-   * Fetches the products from the API when the component mounts or when the skip value or sort changes.
+   * Fetches the products from the API when the component mounts or when the page, sort, or category changes.
    * Handles loading and error states as well.
    *
    * @async
@@ -41,6 +47,8 @@ export default function Products() {
 
         const categoryQuery = selectedCategory ? `&category=${selectedCategory}` : '';
 
+        const skip = (page - 1) * limit;
+
         let res = await fetch(`https://next-ecommerce-api.vercel.app/products?limit=${limit}&skip=${skip}&sortBy=${sortQuery}&order=${orderQuery}${categoryQuery}`);
         if (!res.ok) throw new Error('Network response was not ok');
         let data = await res.json();
@@ -52,13 +60,24 @@ export default function Products() {
       }
     }
     fetchProducts();
-  }, [skip, sortBy, order, selectedCategory]);
+  }, [page, sortBy, order, selectedCategory]);
 
   /**
-   * Handles cycling to the previous image in the product's image gallery.
-   *
-   * @param {number} index - Index of the product in the list.
+   * Updates the URL with the current search, filter, and sort options.
    */
+  const updateUrl = () => {
+    const url = new URL(window.location);
+    url.searchParams.set('page', page);
+    url.searchParams.set('sortBy', sortBy);
+    url.searchParams.set('order', order);
+    url.searchParams.set('category', selectedCategory || '');
+    router.push(url.toString());
+  };
+
+  useEffect(() => {
+    updateUrl();
+  }, [page, sortBy, order, selectedCategory]);
+
   const handlePrev = (index) => {
     setProducts((prevProducts) =>
       prevProducts.map((product, i) => {
@@ -73,11 +92,6 @@ export default function Products() {
     );
   };
 
-  /**
-   * Handles cycling to the next image in the product's image gallery.
-   *
-   * @param {number} index - Index of the product in the list.
-   */
   const handleNext = (index) => {
     setProducts((prevProducts) =>
       prevProducts.map((product, i) => {
@@ -92,26 +106,12 @@ export default function Products() {
     );
   };
 
-  /**
-   * Handles navigating to the next page of products.
-   *
-   * @function handleNextPage
-   */
   const handleNextPage = () => {
-    const newSkip = skip + limit;
-    setSkip(newSkip);
-    router.push(`?skip=${newSkip}&sortBy=${sortBy}&order=${order}&category=${selectedCategory || ''}`);
+    setPage((prevPage) => prevPage + 1);
   };
 
-  /**
-   * Handles navigating to the previous page of products.
-   *
-   * @function handlePrevPage
-   */
   const handlePrevPage = () => {
-    const newSkip = Math.max(0, skip - limit);
-    setSkip(newSkip);
-    router.push(`?skip=${newSkip}&sortBy=${sortBy}&order=${order}&category=${selectedCategory || ''}`);
+    setPage((prevPage) => (prevPage > 1 ? prevPage - 1 : 1));
   };
 
   if (loading) return <div className="text-center text-lg font-semibold">Loading...</div>;
@@ -120,10 +120,7 @@ export default function Products() {
 
   return (
     <div>
-      <Filter onCategoryChange={(category) => {
-        setSelectedCategory(category);
-        router.push(`?skip=0&sortBy=${sortBy}&order=${order}&category=${category || ''}`);
-      }} />
+      <Filter onCategoryChange={setSelectedCategory} />
       <Sort onSortChange={(name, value) => {
         if (name === 'sortBy') {
           if (value === 'id') {
@@ -133,7 +130,6 @@ export default function Products() {
             setSortBy('price');
             setOrder(value.includes('asc') ? 'asc' : 'desc');
           }
-          router.push(`?skip=0&sortBy=${sortBy}&order=${order}&category=${selectedCategory || ''}`);
         }
       }} />
       <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
@@ -184,7 +180,7 @@ export default function Products() {
         <button
           className="bg-gray-800 text-white p-2 rounded"
           onClick={handlePrevPage}
-          disabled={skip === 0}
+          disabled={page === 1}
         >
           Previous
         </button>
