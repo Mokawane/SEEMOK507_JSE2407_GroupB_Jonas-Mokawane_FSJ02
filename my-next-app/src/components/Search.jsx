@@ -1,12 +1,26 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+
 export default function Search() {
+  const router = useRouter();
+
+  const handleSearch = (event) => {
+    event.preventDefault();
+    const query = event.target.query.value;
+    router.push(`/search?query=${encodeURIComponent(query)}`);
+  };
+
   return (
-    <form action="/search" method="GET" className="flex items-center">
-      <input name="query" placeholder="Search..." className="rounded-tl-2xl rounded-bl-2xl pl-3" />
+    <form onSubmit={handleSearch} className="flex items-center">
+      <input
+        name="query"
+        placeholder="Search..."
+        className="rounded-tl-2xl rounded-bl-2xl pl-3"
+      />
       <button
         type="submit"
-        className="flex items-center justify-center px-1 bg-blue rounded-tr-2xl rounded-br-2xl ml- bg-blue-900"
+        className="flex items-center justify-center px-1 bg-blue-900 rounded-tr-2xl rounded-br-2xl"
       >
         <span>
           <svg
