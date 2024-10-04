@@ -1,21 +1,25 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 const FALLBACK_IMAGE_URL = 'https://via.placeholder.com/400?text=Image+Not+Found';
 
 /**
- * Component that displays detailed information about a specific product, including images, title, price, category, stock, reviews, etc.
+ * Component that displays detailed information about a specific product, 
+ * including images, title, price, category, stock, reviews, etc.
  *
  * @component
  * @param {Object} params - Object containing the product ID from the URL.
  */
 export default function ProductDetail({ params }) {
+  const { id } = params;
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
   const [product, setProduct] = useState(null);
   const [currentImage, setCurrentImage] = useState('');
   const [images, setImages] = useState([]);
-  const { id } = params;
 
   /**
    * Fetches the product details from the API when the component mounts or the `id` changes.
@@ -53,17 +57,39 @@ export default function ProductDetail({ params }) {
     e.target.src = FALLBACK_IMAGE_URL;
   };
 
+  /**
+   * Handles navigating back to the product list with preserved filters.
+   *
+   * @function handleBack
+   */
+  const handleBack = () => {
+    const page = searchParams.get('page') || 1;
+    const sortBy = searchParams.get('sortBy') || 'id';
+    const order = searchParams.get('order') || 'asc';
+    const category = searchParams.get('category') || '';
+    const query = searchParams.get('query') || '';
+
+    const queryParams = new URLSearchParams({
+      page,
+      sortBy,
+      order,
+      category,
+      query,
+    });
+
+    router.push(`/products?${queryParams.toString()}`);
+  };
+
   if (!product) {
     return <div>Loading...</div>;
   }
 
   return (
     <div className="max-w-4xl mx-auto p-4">
-      <Link href="/products">
-        <button className="bg-gray-800 text-white p-2 rounded mb-4">
-          Back
-        </button>
-      </Link>
+      <button onClick={handleBack} className="bg-gray-800 text-white p-2 rounded mb-4">
+        Back to Products
+      </button>
+      
       <div className="flex flex-col md:flex-row">
         <div className="lg:col-span-3 w-full lg:sticky top-0 text-center">
           <div className="bg-gray-200 px-4 py-12 rounded-xl">
@@ -94,11 +120,13 @@ export default function ProductDetail({ params }) {
             </div>
           )}
         </div>
+
         <div className="w-full md:w-1/2 md:ml-4">
           <h1 className="text-3xl font-bold mb-4">{product.title}</h1>
           <p className="text-xl text-gray-700 mb-4">Category: {product.category}</p>
           <p className="text-xl text-gray-700 mb-4">Price: ${product.price}</p>
           <p className="text-md text-gray-500 mb-6">{product.description}</p>
+
           {product.tags && (
             <div className="mb-4">
               <h3 className="text-lg font-semibold">Tags:</h3>
@@ -109,18 +137,21 @@ export default function ProductDetail({ params }) {
               </ul>
             </div>
           )}
+          
           {product.rating && (
             <div className="mb-4">
               <h3 className="text-lg font-semibold">Rating:</h3>
               <p>{product.rating} / 5</p>
             </div>
           )}
+          
           {product.stock && (
             <div className="mb-4">
               <h3 className="text-lg font-semibold">Stock:</h3>
               <p>{product.stock} items available</p>
             </div>
           )}
+
           {product.reviews && product.reviews.length > 0 && (
             <div>
               <h3 className="text-lg font-semibold mb-2">Reviews:</h3>

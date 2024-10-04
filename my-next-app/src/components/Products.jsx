@@ -11,8 +11,8 @@ import Filter from './Filter';
  * Allows users to filter by category, sort by price, search by keyword, 
  * and navigate through pages.
  *
- * On page load, the URL is parsed to apply the correct filtering, sorting, 
- * and search parameters. Updates the URL when the state changes.
+ * The applied filtering, sorting, and search parameters are retained when 
+ * navigating to a product's detail view and returning to the list.
  *
  * @component
  */
@@ -172,7 +172,18 @@ export default function Products() {
       <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
         {products.map((product, index) => (
           <li key={product.id} className="bg-white border p-2 shadow-lg rounded-lg transition-transform transform hover:scale-105">
-            <Link href={`/product/${product.id}`}>
+            <Link
+              href={{
+                pathname: `/product/${product.id}`,
+                query: {
+                  page,
+                  sortBy,
+                  order,
+                  category: selectedCategory,
+                  query: searchQuery,
+                }
+              }}
+            >
               <div className="relative">
                 {product.images.length > 1 && (
                   <>
