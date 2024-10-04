@@ -2,14 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation'; 
 import Sort from './Sort';
 import Filter from './Filter';
 
 /**
  * Component that fetches and displays a paginated list of products.
- * Allows users to cycle through product images, filter by category, 
- * sort by price, and handle pagination.
+ * Allows users to filter by category, sort by price, search by keyword, 
+ * and navigate through pages.
+ *
+ * On page load, the URL is parsed to apply the correct filtering, sorting, 
+ * and search parameters. Updates the URL when the state changes.
  *
  * @component
  */
@@ -65,6 +68,8 @@ export default function Products() {
   /**
    * Updates the URL with the current search, filter, sort, and pagination options.
    * Preserves the existing query parameters, including the searchQuery.
+   * 
+   * @function updateUrl
    */
   const updateUrl = () => {
     const currentParams = new URLSearchParams(window.location.search);
@@ -73,18 +78,26 @@ export default function Products() {
     currentParams.set('sortBy', sortBy);
     currentParams.set('order', order);
     currentParams.set('category', selectedCategory || '');
-
     currentParams.set('query', searchQuery);
 
     const url = `${window.location.pathname}?${currentParams.toString()}`;
     router.push(url);
   };
 
+  /**
+   * useEffect hook to fetch products and update the URL whenever 
+   * the filtering parameters change (page, sortBy, order, selectedCategory, searchQuery).
+   */
   useEffect(() => {
     fetchProducts();
     updateUrl();
   }, [page, sortBy, order, selectedCategory, searchQuery]);
 
+  /**
+   * Handles cycling through product images by showing the previous image.
+   * 
+   * @param {number} index - The index of the product in the products array.
+   */
   const handlePrev = (index) => {
     setProducts((prevProducts) =>
       prevProducts.map((product, i) => {
@@ -99,6 +112,11 @@ export default function Products() {
     );
   };
 
+  /**
+   * Handles cycling through product images by showing the next image.
+   * 
+   * @param {number} index - The index of the product in the products array.
+   */
   const handleNext = (index) => {
     setProducts((prevProducts) =>
       prevProducts.map((product, i) => {
@@ -113,10 +131,20 @@ export default function Products() {
     );
   };
 
+  /**
+   * Handles navigating to the next page of products.
+   * 
+   * @function handleNextPage
+   */
   const handleNextPage = () => {
     setPage((prevPage) => prevPage + 1);
   };
 
+  /**
+   * Handles navigating to the previous page of products.
+   * 
+   * @function handlePrevPage
+   */
   const handlePrevPage = () => {
     setPage((prevPage) => (prevPage > 1 ? prevPage - 1 : 1));
   };
