@@ -2,24 +2,26 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Sort from './Sort';
 import Filter from './Filter';
 
 /**
- * Component that fetches and displays a paginated list of products. Allows users to cycle through
- * product images and navigate between pages of products.
+ * Component that fetches and displays a paginated list of products.
+ * Allows users to cycle through product images, filter by category, 
+ * sort by price, and handle pagination.
  *
  * @component
  */
 export default function Products() {
   const router = useRouter();
-  const { query } = router;
+  const searchParams = useSearchParams();
 
-  const initialPage = query?.page ? Number(query.page) : 1;
-  const initialSortBy = query?.sortBy || 'id';
-  const initialOrder = query?.order || 'asc';
-  const initialCategory = query?.category || null;
+  const initialPage = searchParams.get('page') ? Number(searchParams.get('page')) : 1;
+  const initialSortBy = searchParams.get('sortBy') || 'id';
+  const initialOrder = searchParams.get('order') || 'asc';
+  const initialCategory = searchParams.get('category') || '';
+  const initialSearch = searchParams.get('query') || '';
 
   const [products, setProducts] = useState([]);
   const [page, setPage] = useState(initialPage);
@@ -28,55 +30,60 @@ export default function Products() {
   const [sortBy, setSortBy] = useState(initialSortBy);
   const [order, setOrder] = useState(initialOrder);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const limit = 20;
 
   /**
-   * Fetches the products from the API when the component mounts or when the page, sort, or category changes.
-   * Handles loading and error states as well.
-   *
+   * Fetches products from the API based on search, filter, sort, and pagination parameters.
+   * 
    * @async
    * @function fetchProducts
    */
-  useEffect(() => {
-    async function fetchProducts() {
-      setLoading(true);
-      setError(null);
-      try {
-        const sortQuery = sortBy === 'id' ? 'id' : 'price';
-        const orderQuery = order === 'asc' || sortBy === 'id' ? 'asc' : order;
+  const fetchProducts = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const sortQuery = sortBy === 'id' ? 'id' : 'price';
+      const orderQuery = order === 'asc' || sortBy === 'id' ? 'asc' : order;
+      const categoryQuery = selectedCategory ? `&category=${selectedCategory}` : '';
+      const searchQueryParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
+      const skip = (page - 1) * limit;
 
-        const categoryQuery = selectedCategory ? `&category=${selectedCategory}` : '';
-
-        const skip = (page - 1) * limit;
-
-        let res = await fetch(`https://next-ecommerce-api.vercel.app/products?limit=${limit}&skip=${skip}&sortBy=${sortQuery}&order=${orderQuery}${categoryQuery}`);
-        if (!res.ok) throw new Error('Network response was not ok');
-        let data = await res.json();
-        setProducts(data);
-      } catch (error) {
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
+      const res = await fetch(
+        `https://next-ecommerce-api.vercel.app/products?limit=${limit}&skip=${skip}&sortBy=${sortQuery}&order=${orderQuery}${categoryQuery}${searchQueryParam}`
+      );
+      if (!res.ok) throw new Error('Failed to fetch products');
+      const data = await res.json();
+      setProducts(data);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
     }
-    fetchProducts();
-  }, [page, sortBy, order, selectedCategory]);
+  };
 
   /**
-   * Updates the URL with the current search, filter, and sort options.
+   * Updates the URL with the current search, filter, sort, and pagination options.
+   * Preserves the existing query parameters, including the searchQuery.
    */
   const updateUrl = () => {
-    const url = new URL(window.location);
-    url.searchParams.set('page', page);
-    url.searchParams.set('sortBy', sortBy);
-    url.searchParams.set('order', order);
-    url.searchParams.set('category', selectedCategory || '');
-    router.push(url.toString());
+    const currentParams = new URLSearchParams(window.location.search);
+
+    currentParams.set('page', page);
+    currentParams.set('sortBy', sortBy);
+    currentParams.set('order', order);
+    currentParams.set('category', selectedCategory || '');
+
+    currentParams.set('query', searchQuery);
+
+    const url = `${window.location.pathname}?${currentParams.toString()}`;
+    router.push(url);
   };
 
   useEffect(() => {
+    fetchProducts();
     updateUrl();
-  }, [page, sortBy, order, selectedCategory]);
+  }, [page, sortBy, order, selectedCategory, searchQuery]);
 
   const handlePrev = (index) => {
     setProducts((prevProducts) =>
@@ -121,17 +128,19 @@ export default function Products() {
   return (
     <div>
       <Filter onCategoryChange={setSelectedCategory} />
-      <Sort onSortChange={(name, value) => {
-        if (name === 'sortBy') {
-          if (value === 'id') {
-            setSortBy('id');
-            setOrder('asc');
-          } else {
-            setSortBy('price');
-            setOrder(value.includes('asc') ? 'asc' : 'desc');
+      <Sort
+        onSortChange={(name, value) => {
+          if (name === 'sortBy') {
+            if (value === 'id') {
+              setSortBy('id');
+              setOrder('asc');
+            } else {
+              setSortBy('price');
+              setOrder(value.includes('asc') ? 'asc' : 'desc');
+            }
           }
-        }
-      }} />
+        }}
+      />
       <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
         {products.map((product, index) => (
           <li key={product.id} className="bg-white border p-2 shadow-lg rounded-lg transition-transform transform hover:scale-105">
@@ -177,17 +186,10 @@ export default function Products() {
         ))}
       </ul>
       <div className="flex justify-between mt-4 px-4">
-        <button
-          className="bg-gray-800 text-white p-2 rounded"
-          onClick={handlePrevPage}
-          disabled={page === 1}
-        >
+        <button className="bg-gray-800 text-white p-2 rounded" onClick={handlePrevPage} disabled={page === 1}>
           Previous
         </button>
-        <button
-          className="bg-gray-800 text-white p-2 rounded"
-          onClick={handleNextPage}
-        >
+        <button className="bg-gray-800 text-white p-2 rounded" onClick={handleNextPage}>
           Next
         </button>
       </div>
